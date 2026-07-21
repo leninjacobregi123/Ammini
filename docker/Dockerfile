@@ -8,10 +8,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
+# Use Ubuntu 22.04's own default python3 (3.10) rather than installing 3.11
+# alongside it -- `python3-pip` is tied to whichever python3 is the OS
+# default, so installing a second interpreter version and only symlinking
+# `python` to it leaves pip installing into the *other* interpreter's
+# site-packages (import errors at runtime despite a clean build log).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3.11 python3.11-venv python3-pip git curl \
+        python3 python3-pip git curl \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.11 /usr/bin/python
+    && ln -sf /usr/bin/python3 /usr/bin/python
 
 WORKDIR /workspace
 
