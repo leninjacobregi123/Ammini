@@ -8,9 +8,12 @@
 COMPOSE = DOCKER_UID=$$(id -u) DOCKER_GID=$$(id -g) docker compose
 
 # Create bind-mount targets on the host *before* compose does, so Docker
-# never auto-creates them (which would make them root-owned).
+# never auto-creates them (which would make them root-owned). Run via a
+# throwaway container (as your own UID, not root) rather than the host's own
+# mkdir, so this step goes through Docker too.
 init-dirs:
-	mkdir -p data/raw data/prepared tokenizer checkpoints/pretrain checkpoints/instruct .cache
+	docker run --rm -v "$$(pwd):/repo" -w /repo --user "$$(id -u):$$(id -g)" alpine \
+		mkdir -p data/raw data/prepared tokenizer checkpoints/pretrain checkpoints/instruct .cache
 
 build: init-dirs
 	$(COMPOSE) build
