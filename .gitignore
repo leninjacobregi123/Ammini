@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+
+# large / generated, regenerate via the pipeline rather than committing
+data/raw/
+data/prepared/
+checkpoints/
+tokenizer/*.json

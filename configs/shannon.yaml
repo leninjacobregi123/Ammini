@@ -1,0 +1,21 @@
+# Sized for Shannon (RTX 5090, 32GB VRAM): ~586M total params, ~190M "active"
+# per token (top-2 of 8 experts). Comfortably fits training (weights + grads +
+# AdamW states + activations) in 32GB with room to spare for batch size; can
+# be scaled up further (more layers/d_model/experts) once the pipeline is
+# proven end-to-end on this config. vocab_size is filled in at load time from
+# the trained tokenizer.
+context_length: 2048
+d_model: 896
+n_layers: 16
+n_heads: 14
+n_kv_groups: 2
+hidden_dim: 2560
+moe_hidden_dim: 1536
+n_experts: 8
+n_experts_per_tok: 2
+moe_every_n: 1
+aux_loss_alpha: 0.01
+rope_theta: 500000.0
+dropout: 0.0
+qkv_bias: false
+tie_weights: true

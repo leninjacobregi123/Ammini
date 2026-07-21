@@ -1,0 +1,34 @@
+x-common: &common
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  image: malayalam-llm:latest
+  user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+  environment:
+    - HOME=/tmp
+    - HF_HOME=/workspace/.cache/huggingface
+  volumes:
+    - ./data:/workspace/data
+    - ./tokenizer:/workspace/tokenizer
+    - ./checkpoints:/workspace/checkpoints
+    - ./.cache:/workspace/.cache
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+  ipc: host        # avoids torch DataLoader shared-memory crashes at higher batch sizes
+  stdin_open: true
+  tty: true
+
+services:
+  malayalam-llm:
+    <<: *common
+
+  app:
+    <<: *common
+    ports:
+      - "8501:8501"
+    command: ["streamlit", "run", "app/streamlit_app.py", "--server.address=0.0.0.0"]

@@ -1,0 +1,19 @@
+# Tiny config for local sanity-checking (CPU-friendly, ~10-15M params).
+# Not meant to produce fluent output -- just proves the pipeline (tokenizer ->
+# model -> training step -> generation) is wired correctly before running on
+# Shannon. vocab_size is filled in at load time from the trained tokenizer.
+context_length: 256
+d_model: 256
+n_layers: 4
+n_heads: 4
+n_kv_groups: 2
+hidden_dim: 683
+moe_hidden_dim: 512
+n_experts: 4
+n_experts_per_tok: 2
+moe_every_n: 2
+aux_loss_alpha: 0.01
+rope_theta: 10000.0
+dropout: 0.0
+qkv_bias: false
+tie_weights: true
