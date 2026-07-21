@@ -1,4 +1,4 @@
-x-common: &common
+x-base: &base
   build:
     context: .
     dockerfile: docker/Dockerfile
@@ -12,6 +12,10 @@ x-common: &common
     - ./tokenizer:/workspace/tokenizer
     - ./checkpoints:/workspace/checkpoints
     - ./.cache:/workspace/.cache
+  stdin_open: true
+  tty: true
+
+x-gpu: &gpu
   deploy:
     resources:
       reservations:
@@ -19,15 +23,20 @@ x-common: &common
           - driver: nvidia
             count: all
             capabilities: [gpu]
-  stdin_open: true
-  tty: true
 
 services:
-  malayalam-llm:
-    <<: *common
+  # CPU-only stages (download-data, train-tokenizer, prepare-*-data): no GPU
+  # reservation at all, so these never depend on GPU availability/policy.
+  cpu:
+    <<: *base
+
+  # GPU stages (pretrain, instruct-finetune): the only services that actually
+  # request a GPU device reservation.
+  gpu:
+    <<: [*base, *gpu]
 
   app:
-    <<: *common
+    <<: [*base, *gpu]
     ports:
       - "8501:8501"
     command: ["streamlit", "run", "app/streamlit_app.py", "--server.address=0.0.0.0"]
