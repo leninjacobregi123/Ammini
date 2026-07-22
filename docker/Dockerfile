@@ -14,7 +14,11 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /workspace
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Retry on transient network failures mid-download (seen with large
+# transitive deps like pandas) instead of failing the whole build on one blip.
+RUN pip install -r requirements.txt \
+    || pip install -r requirements.txt \
+    || pip install -r requirements.txt
 
 COPY . .
 
