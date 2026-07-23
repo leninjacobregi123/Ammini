@@ -35,12 +35,10 @@ SOURCES = [
 ]
 
 
-def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb=50):
+def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb=50, max_retries=8):
     out_dir.mkdir(parents=True, exist_ok=True)
     max_bytes = max_mb * 1024 * 1024
     shard_bytes = shard_mb * 1024 * 1024
-
-    ds = load_dataset(hf_id, hf_config, split=split, streaming=True)
 
     written_total = 0
     shard_idx = 0
@@ -57,24 +55,42 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
         return path
 
     open_shard()
+    retries = 0
     try:
-        for example in ds:
-            text = (example.get(text_field) or "").strip()
-            if not text:
-                continue
-            text += "\n\n"
-            encoded_len = len(text.encode("utf-8"))
+        while written_total < max_bytes and retries <= max_retries:
+            # Re-created on every (re)connect attempt: on a flaky link a dropped
+            # connection can leave the underlying HTTP client in a broken state
+            # (seen with huggingface_hub's httpx backend), so we don't try to
+            # resume the same iterator -- we open a fresh stream and keep
+            # appending. Some already-seen examples may be re-fetched from the
+            # start of the shard order; harmless duplication for a pretraining
+            # corpus this size, and far simpler than tracking a resume offset.
+            ds = load_dataset(hf_id, hf_config, split=split, streaming=True)
+            try:
+                for example in ds:
+                    text = (example.get(text_field) or "").strip()
+                    if not text:
+                        continue
+                    text += "\n\n"
+                    encoded_len = len(text.encode("utf-8"))
 
-            if shard_written + encoded_len > shard_bytes:
-                shard_idx += 1
-                open_shard()
+                    if shard_written + encoded_len > shard_bytes:
+                        shard_idx += 1
+                        open_shard()
 
-            fh.write(text)
-            shard_written += encoded_len
-            written_total += encoded_len
+                    fh.write(text)
+                    shard_written += encoded_len
+                    written_total += encoded_len
 
-            if written_total >= max_bytes:
-                break
+                    if written_total >= max_bytes:
+                        break
+                break  # stream exhausted or max_bytes hit without error
+            except Exception as e:
+                retries += 1
+                if retries > max_retries:
+                    raise
+                print(f"[{hf_id}] stream error ({e!r}), reconnecting "
+                      f"(retry {retries}/{max_retries}, {written_total / (1024 * 1024):.1f} MB so far)...")
     finally:
         if fh is not None:
             fh.close()
