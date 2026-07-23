@@ -7,11 +7,22 @@ x-base: &base
   environment:
     - HOME=/tmp
     - HF_HOME=/workspace/.cache/huggingface
+    # Shannon's campus network runs a Fortinet SSL-inspecting proxy that
+    # re-signs some HTTPS hosts (seen on Hugging Face's CDN) with its own
+    # "FortiGate CA". The host OS already trusts it (that's why `git`/`docker
+    # pull` never hit this), but Python's bundled certifi inside the
+    # container has no idea about it -- point requests/pip/curl/ssl at the
+    # host's CA bundle (mounted below) instead of certifi's.
+    - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    - CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    - PIP_CERT=/etc/ssl/certs/ca-certificates.crt
   volumes:
     - ./data:/workspace/data
     - ./tokenizer:/workspace/tokenizer
     - ./checkpoints:/workspace/checkpoints
     - ./.cache:/workspace/.cache
+    - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
   stdin_open: true
   tty: true
 
