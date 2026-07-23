@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Built and run entirely via Docker -- no host installs needed on Shannon
 # (no sudo there). Based on the *official* PyTorch image rather than a bare
 # CUDA base + manual `pip install torch` -- avoids re-downloading the ~5GB
@@ -9,14 +10,19 @@
 FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10
 
 WORKDIR /workspace
 
 COPY requirements.txt .
-# Retry on transient network failures mid-download (seen with large
-# transitive deps like pandas) instead of failing the whole build on one blip.
-RUN pip install -r requirements.txt \
+# Shannon's link to PyPI runs ~60-130 KB/s, so a 48MB wheel (pyarrow etc.) can
+# genuinely take 10+ minutes and occasionally stalls mid-download. The
+# BuildKit cache mount persists pip's download cache across retries *and*
+# across separate `make build` runs, so a stall doesn't mean starting over --
+# already-fetched wheels are reused instead of re-downloaded from scratch.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt \
     || pip install -r requirements.txt \
     || pip install -r requirements.txt
 
