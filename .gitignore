@@ -1,4 +1,6 @@
 .venv/
+.venv-download/
+.release-staging/
 __pycache__/
 *.pyc
 
