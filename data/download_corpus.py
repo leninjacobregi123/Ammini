@@ -28,6 +28,7 @@ from data._ssl_workaround import apply_if_requested
 apply_if_requested()
 
 from datasets import load_dataset
+from tqdm import tqdm
 
 SOURCES = [
     dict(name="wikipedia", hf_id="wikimedia/wikipedia", hf_config="20231101.ml",
@@ -60,6 +61,8 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
 
     open_shard()
     retries = 0
+    pbar = tqdm(total=max_bytes, initial=0, unit="B", unit_scale=True, unit_divisor=1024,
+                desc=hf_id, dynamic_ncols=True)
     try:
         while written_total < max_bytes and retries <= max_retries:
             # Re-created on every (re)connect attempt: on a flaky link a dropped
@@ -85,6 +88,7 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
                     fh.write(text)
                     shard_written += encoded_len
                     written_total += encoded_len
+                    pbar.update(encoded_len)
 
                     if written_total >= max_bytes:
                         break
@@ -93,9 +97,10 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
                 retries += 1
                 if retries > max_retries:
                     raise
-                print(f"[{hf_id}] stream error ({e!r}), reconnecting "
-                      f"(retry {retries}/{max_retries}, {written_total / (1024 * 1024):.1f} MB so far)...")
+                pbar.write(f"[{hf_id}] stream error ({e!r}), reconnecting "
+                           f"(retry {retries}/{max_retries}, {written_total / (1024 * 1024):.1f} MB so far)...")
     finally:
+        pbar.close()
         if fh is not None:
             fh.close()
 
