@@ -17,6 +17,10 @@ import json
 import re
 from pathlib import Path
 
+from data._ssl_workaround import apply_if_requested
+
+apply_if_requested()
+
 from datasets import load_dataset
 
 ALPACA_RE = re.compile(
