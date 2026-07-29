@@ -73,6 +73,10 @@ def main():
                           "(0 disables early stopping and always runs to --max-steps)")
     ap.add_argument("--min-delta", type=float, default=1e-3,
                      help="minimum val-loss improvement to reset patience and save best.pt")
+    ap.add_argument("--grad-checkpoint", action=argparse.BooleanOptionalAction, default=True,
+                     help="recompute each block's activations during backward instead of keeping "
+                          "all layers' activations resident at once -- needed to fit configs/shannon.yaml "
+                          "(16 layers) in 32GB VRAM; costs some throughput for the memory savings")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -83,6 +87,8 @@ def main():
     eos_id = tok.token_to_id(EOS)
 
     model = MalayaLM(cfg).to(device)
+    if args.grad_checkpoint:
+        model.gradient_checkpointing_enable()
     params = count_params(model)
     print(f"config: {cfg}")
     print(f"params: total={params['total']:,} active/token={params['active']:,}")

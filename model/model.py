@@ -6,6 +6,7 @@ open models (Llama/Mistral/Qwen/Mixtral-class) actually use.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.checkpoint
 
 from model.config import MalayaLMConfig
 from model.layers import RMSNorm, GroupedQueryAttention, SwiGLU, precompute_rope
@@ -57,6 +58,15 @@ class MalayaLM(nn.Module):
 
         self.apply(self._init_weights)
 
+        # off by default (no memory/compute tradeoff unless asked for); enable
+        # for deep/wide configs (e.g. configs/shannon.yaml) where keeping every
+        # layer's activations alive at once for backward doesn't fit in VRAM --
+        # recomputes each block's forward during backward instead of storing it.
+        self.gradient_checkpointing = False
+
+    def gradient_checkpointing_enable(self):
+        self.gradient_checkpointing = True
+
     @staticmethod
     def _init_weights(module):
         if isinstance(module, nn.Linear):
@@ -74,7 +84,12 @@ class MalayaLM(nn.Module):
         x = self.tok_emb(idx)
         aux_losses = []
         for block in self.blocks:
-            x = block(x, self.rope_cos, self.rope_sin)
+            if self.gradient_checkpointing and self.training:
+                x = torch.utils.checkpoint.checkpoint(
+                    block, x, self.rope_cos, self.rope_sin, use_reentrant=False,
+                )
+            else:
+                x = block(x, self.rope_cos, self.rope_sin)
             if block.is_moe:
                 aux_losses.append(block.ffn.last_aux_loss)
         x = self.final_norm(x)
