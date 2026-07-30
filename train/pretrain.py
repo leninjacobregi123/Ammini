@@ -77,6 +77,11 @@ def main():
                      help="recompute each block's activations during backward instead of keeping "
                           "all layers' activations resident at once -- needed to fit configs/shannon.yaml "
                           "(16 layers) in 32GB VRAM; costs some throughput for the memory savings")
+    ap.add_argument("--wandb", action=argparse.BooleanOptionalAction, default=False,
+                     help="log train/val loss, lr, and config to Weights & Biases -- requires "
+                          "WANDB_API_KEY in the environment (wandb.ai/authorize)")
+    ap.add_argument("--wandb-project", default="malayalam-llm")
+    ap.add_argument("--wandb-run-name", default=None)
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -91,6 +96,11 @@ def main():
         model.gradient_checkpointing_enable()
     params = count_params(model)
     print(f"config: {cfg}")
+
+    if args.wandb:
+        import wandb
+        wandb.init(project=args.wandb_project, name=args.wandb_run_name,
+                   config={**vars(args), **cfg.to_dict(), **params})
     print(f"params: total={params['total']:,} active/token={params['active']:,}")
 
     data_dir = Path(args.data_dir)
@@ -143,6 +153,8 @@ def main():
             dt = time.time() - t0
             print(f"step {step:6d} | loss {accum_loss:.4f} | lr {lr:.2e} | {dt:.1f}s")
             t0 = time.time()
+            if args.wandb:
+                wandb.log({"train/loss": accum_loss, "train/lr": lr, "train/step_time_s": dt}, step=step)
 
         if step % args.eval_interval == 0 and step > 0:
             val_loss = estimate_val_loss(model, val_data, args.batch_size, cfg.context_length, device)
@@ -150,6 +162,8 @@ def main():
             print(f"  -> val loss {val_loss:.4f}"
                   + (" (best so far, saving best.pt)" if improved else
                      f" (no improvement, patience {patience_counter + 1}/{args.patience})"))
+            if args.wandb:
+                wandb.log({"val/loss": val_loss}, step=step)
 
             if improved:
                 best_val_loss = val_loss
@@ -179,6 +193,9 @@ def main():
         print(f"NOTE: best.pt (val loss {best_val_loss:.4f}) is usually what you want to hand to "
               f"finetune/instruction_finetune.py, not final.pt -- final.pt is just the last step "
               f"reached, which may be past the point where val loss stopped improving.")
+
+    if args.wandb:
+        wandb.finish()
 
 
 if __name__ == "__main__":
