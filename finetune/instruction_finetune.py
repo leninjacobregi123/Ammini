@@ -85,6 +85,10 @@ def main():
     ap.add_argument("--train-norms", action="store_true", default=True,
                      help="also unfreeze RMSNorm weights (cheap, helps adaptation)")
     ap.add_argument("--mask-prompt-loss", action="store_true", default=True)
+    ap.add_argument("--grad-checkpoint", action=argparse.BooleanOptionalAction, default=True,
+                     help="recompute each block's forward during backward instead of keeping "
+                          "all activations resident -- LoRA freezes weights but backprop still "
+                          "needs the full activation graph, so this matters here too")
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -111,6 +115,8 @@ def main():
             if module.__class__.__name__ == "RMSNorm":
                 for p in module.parameters():
                     p.requires_grad = True
+    if args.grad_checkpoint:
+        model.gradient_checkpointing_enable()
     model.to(device)
 
     stats = count_trainable(model)
@@ -127,6 +133,9 @@ def main():
     trainable = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr=args.lr, weight_decay=0.01)
 
+    use_amp = device == "cuda"
+    amp_dtype = torch.bfloat16 if use_amp else torch.float32
+
     total_steps = args.epochs * len(loader)
     step = 0
     model.train()
@@ -138,7 +147,8 @@ def main():
             set_lr(optimizer, lr)
 
             optimizer.zero_grad(set_to_none=True)
-            _, loss = model(input_ids, targets)
+            with torch.autocast(device_type=device, dtype=amp_dtype, enabled=use_amp):
+                _, loss = model(input_ids, targets)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(trainable, args.grad_clip)
             optimizer.step()
