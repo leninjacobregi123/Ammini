@@ -1,0 +1,39 @@
+[
+  {"id": "factual_01", "category": "factual", "instruction": "ഇന്ത്യയുടെ സ്വാതന്ത്ര്യസമരത്തിൽ മഹാത്മാഗാന്ധിയുടെ പ്രധാന സംഭാവനകൾ എന്തൊക്കെയാണ്?"},
+  {"id": "factual_02", "category": "factual", "instruction": "സൂര്യനും ഭൂമിയും തമ്മിലുള്ള ബന്ധം വിശദീകരിക്കുക."},
+  {"id": "factual_03", "category": "factual", "instruction": "കേരളത്തിന്റെ ഭൂമിശാസ്ത്രപരമായ പ്രത്യേകതകൾ എന്തൊക്കെയാണ്?"},
+  {"id": "factual_04", "category": "factual", "instruction": "ജലചക്രം (water cycle) എങ്ങനെയാണ് പ്രവർത്തിക്കുന്നത്?"},
+  {"id": "factual_05", "category": "factual", "instruction": "ഛത്രപതി ശിവാജി ആരായിരുന്നു?"},
+  {"id": "factual_simple_01", "category": "factual_simple", "instruction": "കേരളത്തിന്റെ തലസ്ഥാനം ഏതാണ്?"},
+  {"id": "factual_simple_02", "category": "factual_simple", "instruction": "ഒരു ആഴ്ചയിൽ എത്ര ദിവസങ്ങളുണ്ട്?"},
+  {"id": "factual_simple_03", "category": "factual_simple", "instruction": "ഇന്ത്യയുടെ ദേശീയ പക്ഷി ഏതാണ്?"},
+  {"id": "factual_simple_04", "category": "factual_simple", "instruction": "ഒരു വർഷത്തിൽ എത്ര മാസങ്ങളുണ്ട്?"},
+  {"id": "factual_simple_05", "category": "factual_simple", "instruction": "വെള്ളത്തിന്റെ രാസ സൂത്രവാക്യം (chemical formula) എന്താണ്?"},
+  {"id": "instruction_01", "category": "instruction", "instruction": "ഒരു വെബ്‌സൈറ്റ് രൂപകൽപ്പന ചെയ്യുന്നതിലെ പ്രധാന ഘടകങ്ങൾ എന്തൊക്കെയാണെന്ന് പറഞ്ഞുതരാമോ?"},
+  {"id": "instruction_02", "category": "instruction", "instruction": "ആരോഗ്യകരമായ ജീവിതശൈലി നിലനിർത്താനുള്ള മൂന്ന് വഴികൾ പറയുക."},
+  {"id": "instruction_03", "category": "instruction", "instruction": "മഴയെക്കുറിച്ച് ഒരു ചെറിയ കവിത എഴുതുക."},
+  {"id": "instruction_04", "category": "instruction", "instruction": "ഒരു നല്ല സുഹൃത്തിന്റെ ഗുണങ്ങൾ എന്തൊക്കെയാണെന്ന് ചുരുക്കി വിശദീകരിക്കുക."},
+  {"id": "instruction_05", "category": "instruction", "instruction": "വ്യായാമം ചെയ്യുന്നതിന്റെ മൂന്ന് ഗുണങ്ങൾ പട്ടികപ്പെടുത്തുക."},
+  {"id": "instruction_06", "category": "instruction", "instruction": "ഒരു കാപ്പി എങ്ങനെ ഉണ്ടാക്കാം എന്ന് ഘട്ടം ഘട്ടമായി വിശദീകരിക്കുക."},
+  {"id": "casual_01", "category": "casual", "instruction": "ഹായ്, സുഖമാണോ?"},
+  {"id": "casual_02", "category": "casual", "instruction": "നിന്റെ പേരെന്താണ്? നീ ആരാണ്?"},
+  {"id": "casual_03", "category": "casual", "instruction": "നിനക്ക് ഏറ്റവും ഇഷ്ടപ്പെട്ട ഋതു ഏതാണ്?"},
+  {"id": "casual_04", "category": "casual", "instruction": "ഇന്ന് എനിക്ക് അല്പം ക്ഷീണം തോന്നുന്നു."},
+  {"id": "multi_turn_01", "category": "multi_turn", "turns": [
+    "മലയാള സാഹിത്യത്തിലെ ഒരു പ്രധാന എഴുത്തുകാരനെക്കുറിച്ച് പറയാമോ?",
+    "അദ്ദേഹത്തിന്റെ ഏറ്റവും പ്രശസ്തമായ കൃതി ഏതാണ്?"
+  ]},
+  {"id": "multi_turn_02", "category": "multi_turn", "turns": [
+    "ഒരു നല്ല യാത്രാ സ്ഥലം നിർദ്ദേശിക്കാമോ?",
+    "അവിടെ പോകാൻ ഏറ്റവും നല്ല സമയം ഏതാണ്?"
+  ]},
+  {"id": "multi_turn_03", "category": "multi_turn", "turns": [
+    "എനിക്ക് ഒരു പുസ്തകം വായിക്കണം, നിർദ്ദേശിക്കാമോ?",
+    "നന്ദി, അതിനെപ്പറ്റി കുറച്ചുകൂടി പറയാമോ?"
+  ]},
+  {"id": "edge_short_01", "category": "edge_case", "instruction": "എന്തുകൊണ്ട്?"},
+  {"id": "edge_short_02", "category": "edge_case", "instruction": "ശരി."},
+  {"id": "edge_codeswitch_01", "category": "edge_case", "instruction": "Machine learning എന്നാൽ എന്താണ്? ലളിതമായി മലയാളത്തിൽ പറയാമോ?"},
+  {"id": "edge_unknown_01", "category": "edge_case", "instruction": "2045-ൽ ചൊവ്വയിൽ ആദ്യമായി ഇറങ്ങിയ മനുഷ്യന്റെ പേരെന്താണ്?"},
+  {"id": "edge_long_01", "category": "edge_case", "instruction": "എനിക്ക് ഒരു ചെറിയ ബിസിനസ്സ് തുടങ്ങണം എന്നുണ്ട്, പക്ഷേ എവിടെ തുടങ്ങണം എന്നറിയില്ല, എന്ത് ഉൽപ്പന്നം വിൽക്കണം എന്നും അറിയില്ല, മൂലധനം എങ്ങനെ കണ്ടെത്തും എന്നും ആശയക്കുഴപ്പത്തിലാണ്, എന്നോട് ഉപദേശിക്കാമോ?"}
+]

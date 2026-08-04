@@ -1,5 +1,5 @@
 .PHONY: init-dirs build verify-gpu shell shell-gpu download-data train-tokenizer prepare-pretrain-data \
-        prepare-instruct-data pretrain instruct-finetune serve
+        prepare-instruct-data pretrain instruct-finetune evaluate serve
 
 # Run every docker compose invocation as your own host user/group instead of
 # root -- required since Shannon has no sudo, so anything the container
@@ -62,6 +62,15 @@ instruct-finetune: init-dirs
 	$(COMPOSE) run --rm gpu python finetune/instruction_finetune.py \
 		--pretrained checkpoints/pretrain/best.pt --tokenizer tokenizer/malayalam_tokenizer.json \
 		--data data/prepared/instruct.json --out checkpoints/instruct/malayalam_assistant.pt
+
+# eval/run_eval.py has no KV cache (same as model/model.py::generate used by
+# the app), so generation is slow enough on CPU to keep this on the gpu
+# service like training/serving, even though it's inference-only.
+evaluate: init-dirs
+	$(COMPOSE) run --rm gpu python eval/run_eval.py \
+		--checkpoint checkpoints/instruct/malayalam_assistant.pt \
+		--tokenizer tokenizer/malayalam_tokenizer.json \
+		--prompts eval/prompts.json --out eval/results.jsonl
 
 # ---- serving (GPU) ----
 serve: init-dirs
