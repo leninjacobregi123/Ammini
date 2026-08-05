@@ -12,6 +12,7 @@ x-base: &base
     - ./tokenizer:/workspace/tokenizer
     - ./checkpoints:/workspace/checkpoints
     - ./.cache:/workspace/.cache
+    - ./eval:/workspace/eval
   stdin_open: true
   tty: true
 
