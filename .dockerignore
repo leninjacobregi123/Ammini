@@ -1,0 +1,17 @@
+# Mirrors .gitignore -- Docker doesn't read that file, so without this the
+# build context (and then the image, via `COPY . .`) drags in every pretrain
+# checkpoint, the raw/prepared corpus, and the HF/pip cache. All four of these
+# are bind-mounted at runtime anyway (docker-compose.yml), so baking them into
+# the image is pure wasted disk on every rebuild.
+.git/
+.venv/
+.venv-download/
+.release-staging/
+__pycache__/
+*.pyc
+
+data/raw/
+data/prepared/
+checkpoints/
+tokenizer/*.json
+.cache/
