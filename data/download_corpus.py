@@ -60,7 +60,6 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
         shard_written = 0
         return path
 
-    open_shard()
     retries = 0
     pbar = tqdm(total=max_bytes, initial=0, unit="B", unit_scale=True, unit_divisor=1024,
                 desc=hf_id, dynamic_ncols=True)
@@ -82,7 +81,16 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
                     text += "\n\n"
                     encoded_len = len(text.encode("utf-8"))
 
-                    if shard_written + encoded_len > shard_bytes:
+                    # Lazy-open: only truncate a shard file once we actually have
+                    # bytes to put in it. Opening eagerly at the top of this
+                    # function meant a source that 403s before yielding a single
+                    # example still wiped out an existing (possibly already-
+                    # complete, from a prior successful run) shard 0000 for
+                    # nothing -- exactly what happened when a re-run hit HF's
+                    # intermittent Xet CDN outage on the very first read.
+                    if fh is None:
+                        open_shard()
+                    elif shard_written + encoded_len > shard_bytes:
                         shard_idx += 1
                         open_shard()
 
