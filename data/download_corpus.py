@@ -21,6 +21,7 @@ Usage:
     python data/download_corpus.py --out-dir data/raw --max-mb-per-source 500
 """
 import argparse
+import time
 from pathlib import Path
 
 from data._ssl_workaround import apply_if_requested
@@ -40,7 +41,7 @@ SOURCES = [
 ]
 
 
-def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb=50, max_retries=8):
+def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb=50, max_retries=30):
     out_dir.mkdir(parents=True, exist_ok=True)
     max_bytes = max_mb * 1024 * 1024
     shard_bytes = shard_mb * 1024 * 1024
@@ -97,8 +98,13 @@ def stream_source(hf_id, hf_config, split, text_field, out_dir, max_mb, shard_mb
                 retries += 1
                 if retries > max_retries:
                     raise
-                pbar.write(f"[{hf_id}] stream error ({e!r}), reconnecting "
+                # HF's Xet CDN (xet-bridge-us) has intermittent 403/SignatureError
+                # windows lasting minutes (see huggingface/datasets#8328) that a
+                # same-file retry rides out -- back off instead of hammering it.
+                delay = min(5 * retries, 60)
+                pbar.write(f"[{hf_id}] stream error ({e!r}), retrying in {delay}s "
                            f"(retry {retries}/{max_retries}, {written_total / (1024 * 1024):.1f} MB so far)...")
+                time.sleep(delay)
     finally:
         pbar.close()
         if fh is not None:
@@ -122,10 +128,17 @@ def main():
         if src["name"] not in args.sources:
             continue
         print(f"Streaming {src['hf_id']} (config={src['hf_config']}, split={src['split']}) ...")
-        stream_source(
-            hf_id=src["hf_id"], hf_config=src["hf_config"], split=src["split"],
-            text_field=src["text_field"], out_dir=out_dir, max_mb=args.max_mb_per_source,
-        )
+        try:
+            stream_source(
+                hf_id=src["hf_id"], hf_config=src["hf_config"], split=src["split"],
+                text_field=src["text_field"], out_dir=out_dir, max_mb=args.max_mb_per_source,
+            )
+        except Exception as e:
+            # Don't let one source's exhausted retries abort the sources still
+            # queued after it -- report and move on so a single flaky source
+            # doesn't cost you the ones that would've succeeded.
+            print(f"[{src['hf_id']}] giving up after retries ({e!r}) -- skipping, "
+                  f"other sources will still run")
 
 
 if __name__ == "__main__":
