@@ -207,10 +207,34 @@ _EXAMPLES = [
 ]
 
 
+# Near-miss counterparts to a few _EXAMPLES above -- same surface topic
+# (time/math/units/reminders/servers) but asking about the *concept* rather
+# than wanting the tool run, answered in plain text. Without these the only
+# "don't call a tool" signal in the training mix comes from the unrelated
+# gpteacher/alpaca examples, which never sit close enough to a trigger phrase
+# to sharpen the boundary -- these do.
+_NO_TOOL_EXAMPLES = [
+    ("സമയം എന്ന വാക്കിന്റെ അർത്ഥം എന്താണ്?",
+     "സമയം എന്നത് സംഭവങ്ങൾ ഭൂതം, വർത്തമാനം, ഭാവി എന്നിങ്ങനെ ക്രമീകരിക്കാൻ ഉപയോഗിക്കുന്ന അളവാണ്."),
+    ("ഗണിതം എന്ന വിഷയം ഇഷ്ടമാണോ?",
+     "എനിക്ക് ഇഷ്ടാനിഷ്ടങ്ങൾ ഇല്ല, ഞാൻ ഒരു AI അസിസ്റ്റന്റാണ്. പക്ഷേ ഗണിതം സംബന്ധിച്ച ചോദ്യങ്ങൾക്ക് സഹായിക്കാൻ എനിക്ക് കഴിയും."),
+    ("ഒരു കിലോമീറ്റർ എന്നാൽ എന്താണ്?",
+     "കിലോമീറ്റർ ദൂരം അളക്കാൻ ഉപയോഗിക്കുന്ന ഒരു യൂണിറ്റാണ്, 1000 മീറ്ററിന് തുല്യമാണ്."),
+    ("ഓർമ്മപ്പെടുത്തൽ എന്നാൽ എന്താണ്?",
+     "ഓർമ്മപ്പെടുത്തൽ എന്നത് ഒരു കാര്യം മറക്കാതിരിക്കാൻ സഹായിക്കുന്ന ഒരു കുറിപ്പാണ്."),
+    ("നിന്റെ പേര് എന്താണ്?",
+     "ഞാൻ അമ്മിണി ആണ്, നിന്നെ സഹായിക്കാൻ ഇവിടെയുണ്ട്."),
+    ("ഒരു സെർവർ എന്നാൽ എന്താണ്?",
+     "സെർവർ എന്നത് മറ്റ് കമ്പ്യൂട്ടറുകൾക്ക് സേവനങ്ങൾ നൽകുന്ന ഒരു കമ്പ്യൂട്ടർ സിസ്റ്റമാണ്."),
+]
+
+
 def build_tool_training_examples():
     """Returns {instruction, input, output, source} records in the same
-    shape data/prepare_instruct.py's other loaders use, demonstrating the
-    <tool_call> convention for every tool in TOOLS."""
+    shape data/prepare_instruct.py's other loaders use: _EXAMPLES demonstrate
+    the <tool_call> convention for every tool in TOOLS, _NO_TOOL_EXAMPLES are
+    topically-similar questions answered in plain text, so the model also
+    sees explicit contrast rather than only positive tool-call examples."""
     records = []
     for instruction, tool_name, tool_args in _EXAMPLES:
         assert tool_name in TOOLS, f"{tool_name} not in TOOLS -- keep _EXAMPLES in sync"
@@ -220,5 +244,12 @@ def build_tool_training_examples():
             "input": "",
             "output": f"<tool_call>{call}</tool_call>",
             "source": "tool_examples",
+        })
+    for instruction, output in _NO_TOOL_EXAMPLES:
+        records.append({
+            "instruction": instruction,
+            "input": "",
+            "output": output,
+            "source": "tool_examples_negative",
         })
     return records
