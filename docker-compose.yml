@@ -13,6 +13,7 @@ x-base: &base
     - ./checkpoints:/workspace/checkpoints
     - ./.cache:/workspace/.cache
     - ./eval:/workspace/eval
+    - ./agent/state:/workspace/agent/state
   stdin_open: true
   tty: true
 

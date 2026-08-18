@@ -9,3 +9,6 @@ data/raw/
 data/prepared/
 checkpoints/
 tokenizer/*.json
+
+# runtime state (reminders etc.), not source
+agent/state/

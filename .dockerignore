@@ -15,3 +15,4 @@ data/prepared/
 checkpoints/
 tokenizer/*.json
 .cache/
+agent/state/

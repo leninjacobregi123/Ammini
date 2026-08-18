@@ -27,8 +27,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from model.config import MalayaLMConfig  # noqa: E402
 from model.model import MalayaLM  # noqa: E402
 from finetune.lora import replace_linear_with_lora, freeze_base_model, count_trainable  # noqa: E402
-from tokenizer.special_tokens import build_training_example, PAD, DEFAULT_SYSTEM_PROMPT  # noqa: E402
+from tokenizer.special_tokens import build_training_example, PAD  # noqa: E402
 from train.lr_schedule import lr_at_step, set_lr  # noqa: E402
+from agent.tools import AGENT_SYSTEM_PROMPT  # noqa: E402
 
 from tokenizers import Tokenizer
 
@@ -79,7 +80,10 @@ def main():
     ap.add_argument("--tokenizer", default="tokenizer/malayalam_tokenizer.json")
     ap.add_argument("--data", default="data/prepared/instruct.json")
     ap.add_argument("--out", default="checkpoints/instruct/malayalam_assistant.pt")
-    ap.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT)
+    ap.add_argument("--system-prompt", default=AGENT_SYSTEM_PROMPT,
+                     help="baked into the checkpoint and reused by eval/serve/agent at inference time -- "
+                          "defaults to the tool-aware prompt (agent/tools.py) so every example, tool-use "
+                          "or not, is trained under the same system prompt the agent will actually use")
     ap.add_argument("--lora-rank", type=int, default=16)
     ap.add_argument("--lora-alpha", type=float, default=16.0)
     ap.add_argument("--train-norms", action="store_true", default=True,

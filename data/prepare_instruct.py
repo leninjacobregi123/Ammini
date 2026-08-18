@@ -8,6 +8,10 @@ Sources (verified to exist on the HF Hub before writing this script):
   - VishnuPJ/Alpaca_Instruct_Malayalam -- single combined "Prompt" field
     (Malayalam Alpaca template with English "### Instruction:" / "### Input:"
     / "### Response:" section markers), parsed out below.
+  - agent/tools.py's synthetic tool-call examples ("tools" source) -- not an
+    external dataset, generated locally so the model learns the
+    <tool_call>{...}</tool_call> convention the agent orchestrator
+    (agent/orchestrator.py) depends on.
 
 Usage:
     python data/prepare_instruct.py --out data/prepared/instruct.json
@@ -15,6 +19,7 @@ Usage:
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 from data._ssl_workaround import apply_if_requested
@@ -22,6 +27,9 @@ from data._ssl_workaround import apply_if_requested
 apply_if_requested()
 
 from datasets import load_dataset
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from agent.tools import build_tool_training_examples  # noqa: E402
 
 ALPACA_RE = re.compile(
     r"###\s*Instruction:\s*\n(?P<instruction>.*?)\n\n###\s*Input:\s*\n(?P<input>.*?)\n\n###\s*Response:\s*\n(?P<output>.*)",
@@ -73,15 +81,22 @@ def load_alpaca_malayalam():
     return records
 
 
+def load_tool_examples():
+    records = build_tool_training_examples()
+    print(f"tool_examples: {len(records)} usable records")
+    return records
+
+
 LOADERS = {
     "gpteacher": load_gpteacher,
     "alpaca": load_alpaca_malayalam,
+    "tools": load_tool_examples,
 }
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sources", nargs="+", choices=list(LOADERS), default=["gpteacher", "alpaca"])
+    ap.add_argument("--sources", nargs="+", choices=list(LOADERS), default=["gpteacher", "alpaca", "tools"])
     ap.add_argument("--out", default="data/prepared/instruct.json")
     ap.add_argument("--max-per-source", type=int, default=None)
     args = ap.parse_args()

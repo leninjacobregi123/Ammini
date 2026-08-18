@@ -1,5 +1,5 @@
 .PHONY: init-dirs build verify-gpu shell shell-gpu download-data train-tokenizer prepare-pretrain-data \
-        prepare-instruct-data pretrain instruct-finetune evaluate serve
+        prepare-instruct-data pretrain instruct-finetune evaluate serve agent
 
 # Run every docker compose invocation as your own host user/group instead of
 # root -- required since Shannon has no sudo, so anything the container
@@ -13,7 +13,7 @@ COMPOSE = DOCKER_UID=$$(id -u) DOCKER_GID=$$(id -g) docker compose
 # mkdir, so this step goes through Docker too.
 init-dirs:
 	docker run --rm -v "$$(pwd):/repo" -w /repo --user "$$(id -u):$$(id -g)" alpine \
-		mkdir -p data/raw data/prepared tokenizer checkpoints/pretrain checkpoints/instruct .cache
+		mkdir -p data/raw data/prepared tokenizer checkpoints/pretrain checkpoints/instruct .cache agent/state
 
 build: init-dirs
 	$(COMPOSE) build
@@ -75,3 +75,11 @@ evaluate: init-dirs
 # ---- serving (GPU) ----
 serve: init-dirs
 	$(COMPOSE) up app
+
+# Interactive agent loop (tool-calling ReAct-style, see agent/orchestrator.py
+# and agent/tools.py) -- only useful once instruct-finetune ran on data that
+# included the "tools" source from prepare-instruct-data.
+agent: init-dirs
+	$(COMPOSE) run --rm gpu python agent/orchestrator.py \
+		--checkpoint checkpoints/instruct/malayalam_assistant.pt \
+		--tokenizer tokenizer/malayalam_tokenizer.json
