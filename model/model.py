@@ -105,10 +105,14 @@ class MalayaLM(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, idx: torch.Tensor, max_new_tokens: int, temperature: float = 0.8,
-                 top_k: int = 40, eos_id: int = None):
-        """Simple recompute-based sampling loop (no KV cache -- fine for a
-        demo-scale chat app; a KV cache is the natural next optimization)."""
+    def generate_stream(self, idx: torch.Tensor, max_new_tokens: int, temperature: float = 0.8,
+                         top_k: int = 40, eos_id: int = None):
+        """Same recompute-based sampling loop as generate() (no KV cache --
+        fine for a demo-scale chat app; a KV cache is the natural next
+        optimization), but yields each new token id as it's produced instead
+        of returning the full sequence at the end -- lets a caller (e.g. the
+        streaming API in server/app.py) forward tokens to a client as they're
+        generated rather than waiting for the whole completion."""
         self.eval()
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -self.cfg.context_length:]
@@ -123,6 +127,19 @@ class MalayaLM(nn.Module):
             next_id = torch.multinomial(probs, num_samples=1)
             idx = torch.cat([idx, next_id], dim=1)
 
-            if eos_id is not None and next_id.item() == eos_id:
-                break
+            token_id = next_id.item()
+            yield token_id
+            if eos_id is not None and token_id == eos_id:
+                return
+
+    def generate(self, idx: torch.Tensor, max_new_tokens: int, temperature: float = 0.8,
+                 top_k: int = 40, eos_id: int = None):
+        """Non-streaming convenience wrapper: collects generate_stream()'s
+        tokens and returns the full sequence (prompt + generated), matching
+        the shape every existing caller (eval/run_eval.py, app/streamlit_app.py,
+        agent/orchestrator.py) already expects."""
+        new_ids = list(self.generate_stream(idx, max_new_tokens, temperature, top_k, eos_id))
+        if new_ids:
+            new_ids_t = torch.tensor([new_ids], dtype=idx.dtype, device=idx.device)
+            idx = torch.cat([idx, new_ids_t], dim=1)
         return idx

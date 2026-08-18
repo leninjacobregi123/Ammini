@@ -80,6 +80,87 @@ def run_turn(model, tok, cfg, system_prompt, history, user_text,
     return raw_text, display_text
 
 
+_TOOL_CALL_OPEN = "<tool_call>"
+
+
+def _split_safe(buffer):
+    """Returns (safe_to_emit, held_back). held_back is the longest suffix of
+    buffer that's still a proper prefix of "<tool_call>" -- i.e. it might be
+    the start of a tool-call tag still growing token by token, so it isn't
+    safe to show the user yet. Everything before that is safe to flush."""
+    max_check = min(len(buffer), len(_TOOL_CALL_OPEN) - 1)
+    for k in range(max_check, 0, -1):
+        if _TOOL_CALL_OPEN.startswith(buffer[-k:]):
+            return buffer[:-k], buffer[-k:]
+    return buffer, ""
+
+
+def run_turn_stream(model, tok, cfg, system_prompt, history, user_text,
+                     max_new_tokens=200, temperature=0.7, top_k=40, max_tool_calls=3):
+    """Generator version of run_turn() for server/app.py's SSE endpoint.
+    Yields dicts as they happen:
+        {"type": "token", "text": "..."}                        -- safe to show the user
+        {"type": "tool_call", "name": "...", "args": {...}}      -- about to run a tool
+        {"type": "tool_result", "result": "..."}                 -- what it returned
+        {"type": "done", "text": "..."}                          -- final full display text
+
+    Token text is held back from being yielded while it could still be the
+    start of a forming "<tool_call>" tag (see _split_safe), so a client never
+    sees tool-call markup flash on screen before being replaced by the
+    "tool_call" event -- it just sees a brief pause instead.
+    """
+    device = next(model.parameters()).device
+    eos_id = tok.token_to_id(END_TURN)
+    base_prompt = format_chat([("system", system_prompt)] + list(history) + [("user", user_text)])
+    base_prompt += f"{ASSISTANT}\n"
+
+    assistant_text = ""
+    display_text = ""
+
+    for _ in range(max_tool_calls + 1):
+        ids = tok.encode(base_prompt + assistant_text).ids
+        ids = ids[-(cfg.context_length - max_new_tokens):]
+        idx = torch.tensor([ids], dtype=torch.long, device=device)
+
+        buffer = ""
+        match = None
+        for token_id in model.generate_stream(idx, max_new_tokens=max_new_tokens,
+                                               temperature=temperature, top_k=top_k, eos_id=eos_id):
+            if token_id == eos_id:
+                break
+            piece = tok.decode([token_id])
+            assistant_text += piece
+            buffer += piece
+
+            match = TOOL_CALL_RE.search(buffer)
+            if match:
+                break
+
+            safe, buffer = _split_safe(buffer)
+            if safe:
+                display_text += safe
+                yield {"type": "token", "text": safe}
+
+        if match:
+            try:
+                call = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                call = {}
+            name, call_args = call.get("name"), call.get("args")
+            result = execute_tool(name, call_args)
+            yield {"type": "tool_call", "name": name, "args": call_args}
+            yield {"type": "tool_result", "result": result}
+            assistant_text += f"\n<tool_result>{result}</tool_result>\n"
+            continue
+
+        if buffer:
+            display_text += buffer
+            yield {"type": "token", "text": buffer}
+        break
+
+    yield {"type": "done", "text": display_text.strip()}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", default="checkpoints/instruct/malayalam_assistant.pt")

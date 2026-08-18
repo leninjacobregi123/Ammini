@@ -42,3 +42,12 @@ services:
     ports:
       - "8501:8501"
     command: ["streamlit", "run", "app/streamlit_app.py", "--server.address=0.0.0.0"]
+
+  # Proper UI: FastAPI + streaming SSE + server/index.html, vs. app's
+  # Streamlit debug demo. See server/app.py for CHECKPOINT/TOKENIZER/DEVICE
+  # env var overrides.
+  api:
+    <<: [*base, *gpu]
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]

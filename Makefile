@@ -1,5 +1,5 @@
 .PHONY: init-dirs build verify-gpu shell shell-gpu download-data train-tokenizer prepare-pretrain-data \
-        prepare-instruct-data pretrain instruct-finetune evaluate evaluate-agent serve agent
+        prepare-instruct-data pretrain instruct-finetune evaluate evaluate-agent serve serve-api agent
 
 # Run every docker compose invocation as your own host user/group instead of
 # root -- required since Shannon has no sudo, so anything the container
@@ -84,6 +84,11 @@ evaluate-agent: init-dirs
 # ---- serving (GPU) ----
 serve: init-dirs
 	$(COMPOSE) up app
+
+# Proper UI (FastAPI + streaming + server/index.html) on :8000, vs. serve's
+# Streamlit debug demo on :8501. Both can run at once if useful.
+serve-api: init-dirs
+	$(COMPOSE) up api
 
 # Interactive agent loop (tool-calling ReAct-style, see agent/orchestrator.py
 # and agent/tools.py) -- only useful once instruct-finetune ran on data that
