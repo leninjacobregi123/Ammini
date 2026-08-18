@@ -1,0 +1,16 @@
+[
+ {"id": "tool_datetime_01", "instruction": "ഇന്ന് എന്ത് ദിവസമാണ്?", "expected_tool": "get_datetime"},
+ {"id": "tool_datetime_02", "instruction": "ഇപ്പോൾ സമയം എത്രയായി?", "expected_tool": "get_datetime"},
+ {"id": "tool_calc_01", "instruction": "45 ഉം 78 ഉം കൂട്ടിയാൽ എത്ര വരും?", "expected_tool": "calculator"},
+ {"id": "tool_calc_02", "instruction": "144 നെ 12 കൊണ്ട് ഹരിച്ചാൽ എത്ര?", "expected_tool": "calculator"},
+ {"id": "tool_unit_01", "instruction": "25 മൈൽ എത്ര കിലോമീറ്റർ ആണ്?", "expected_tool": "unit_convert"},
+ {"id": "tool_unit_02", "instruction": "0 ഡിഗ്രി സെൽഷ്യസ് എത്ര ഫാരൻഹീറ്റ് ആണ്?", "expected_tool": "unit_convert"},
+ {"id": "tool_reminder_01", "instruction": "ഇന്ന് രാത്രി 8 മണിക്ക് മരുന്ന് കഴിക്കാൻ ഓർമ്മപ്പെടുത്തുക", "expected_tool": "set_reminder"},
+ {"id": "tool_reminder_02", "instruction": "ഞാൻ എന്തൊക്കെ ഓർമ്മപ്പെടുത്തലുകൾ സൂക്ഷിച്ചിട്ടുണ്ട്?", "expected_tool": "list_reminders"},
+ {"id": "tool_sysinfo_01", "instruction": "സെർവറിൽ എത്ര നേരമായി പ്രവർത്തിക്കുന്നു?", "expected_tool": "system_info"},
+ {"id": "no_tool_factual_01", "instruction": "കേരളത്തിന്റെ തലസ്ഥാനം ഏതാണ്?", "expected_tool": null},
+ {"id": "no_tool_factual_02", "instruction": "ഇന്ത്യയുടെ ദേശീയ പക്ഷി ഏതാണ്?", "expected_tool": null},
+ {"id": "no_tool_concept_01", "instruction": "ഒരു മണിക്കൂറിൽ എത്ര മിനിറ്റ് ഉണ്ട്?", "expected_tool": null},
+ {"id": "no_tool_chitchat_01", "instruction": "നിനക്ക് സുഖമാണോ?", "expected_tool": null},
+ {"id": "no_tool_chitchat_02", "instruction": "ഒരു നല്ല മലയാളം പഴഞ്ചൊല്ല് പറയാമോ?", "expected_tool": null}
+]

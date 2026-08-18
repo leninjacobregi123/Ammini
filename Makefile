@@ -1,5 +1,5 @@
 .PHONY: init-dirs build verify-gpu shell shell-gpu download-data train-tokenizer prepare-pretrain-data \
-        prepare-instruct-data pretrain instruct-finetune evaluate serve agent
+        prepare-instruct-data pretrain instruct-finetune evaluate evaluate-agent serve agent
 
 # Run every docker compose invocation as your own host user/group instead of
 # root -- required since Shannon has no sudo, so anything the container
@@ -71,6 +71,15 @@ evaluate: init-dirs
 		--checkpoint checkpoints/instruct/malayalam_assistant.pt \
 		--tokenizer tokenizer/malayalam_tokenizer.json \
 		--prompts eval/prompts.json --out eval/results.jsonl
+
+# eval/run_eval.py never exercises the <tool_call> loop -- this runs
+# eval/agent_prompts.json through agent/orchestrator.py's real tool-execution
+# path and checks the called tool against each prompt's expected_tool.
+evaluate-agent: init-dirs
+	$(COMPOSE) run --rm gpu python eval/run_agent_eval.py \
+		--checkpoint checkpoints/instruct/malayalam_assistant.pt \
+		--tokenizer tokenizer/malayalam_tokenizer.json \
+		--prompts eval/agent_prompts.json --out eval/agent_results.jsonl
 
 # ---- serving (GPU) ----
 serve: init-dirs
